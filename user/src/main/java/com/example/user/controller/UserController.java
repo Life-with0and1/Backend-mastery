@@ -1,5 +1,8 @@
 package com.example.user.controller;
 
+import com.example.user.dto.AuthResponse;
+import com.example.user.dto.LoginDTO;
+import com.example.user.dto.LoginResponse;
 import com.example.user.dto.UserDTO;
 import com.example.user.model.User;
 import com.example.user.service.UserService;
@@ -7,10 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/user")
@@ -23,8 +23,20 @@ public class UserController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<User> signUp(@Valid @RequestBody UserDTO userDTO) {
-        User user = userService.signUp(userDTO);
+    public ResponseEntity<AuthResponse> signUp(@Valid @RequestBody UserDTO userDTO) {
+        AuthResponse user = userService.signUp(userDTO);
         return new ResponseEntity<>(user, HttpStatus.CREATED);
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginDTO loginDTO) {
+        LoginResponse user = userService.login(loginDTO);
+        return ResponseEntity.ok(user);
+    }
+
+    @GetMapping("/profile")
+    public String login() {
+        return "Ho";
+    }
+
 }
