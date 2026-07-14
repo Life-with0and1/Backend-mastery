@@ -1,4 +1,12 @@
 package com.example.post.model;
 
-public class Category {
+public enum Category {
+    POTHOLE,
+    ACCIDENT,
+    TRAFFIC,
+    POLICE_CHECKING,
+    ROAD_BLOCK,
+    WATER_LOGGING,
+    CONSTRUCTION,
+    OTHER
 }
