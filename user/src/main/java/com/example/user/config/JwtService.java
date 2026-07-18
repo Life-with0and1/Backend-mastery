@@ -31,9 +31,10 @@ public class JwtService {
                 .getPayload();
     }
 
-    public String generateToken(String email){
+    public String generateToken(String email,Long userId){
         return Jwts.builder()
                 .subject(email)
+                .claim("userId", userId)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey())

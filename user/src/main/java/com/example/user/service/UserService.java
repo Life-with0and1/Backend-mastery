@@ -44,7 +44,7 @@
 
             User savedUser = userRepository.save(user);
 
-            String token = jwtService.generateToken(savedUser.getEmail());
+            String token = jwtService.generateToken(savedUser.getEmail(), savedUser.getId());
 
             UserRegisterEvent event = new UserRegisterEvent(
                     savedUser.getId(),
@@ -73,7 +73,7 @@
                 throw new InvalidCredentialsException("Invalid user credentials");
             }
 
-            String token = jwtService.generateToken(user.get().getEmail());
+            String token = jwtService.generateToken(user.get().getEmail(), user.get().getId());
 
             return new LoginResponse(token);
         }
