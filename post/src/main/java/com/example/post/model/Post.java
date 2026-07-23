@@ -1,5 +1,6 @@
 package com.example.post.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 
 @Getter
@@ -39,4 +41,8 @@ public class Post {
     @CreationTimestamp
     private LocalDateTime createdAt;
     private boolean active = true;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<PostMedia> media = new ArrayList<>();
 }

@@ -2,34 +2,71 @@ package com.example.post.service;
 
 
 import com.example.post.dto.CreatePostDTO;
+import com.example.post.model.MediaType;
 import com.example.post.model.Post;
+import com.example.post.model.PostMedia;
 import com.example.post.repository.PostRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Service
 public class PostService {
 
-    private PostRepository postRepository;
+    private final PostRepository postRepository;
+    private final CloudinaryService cloudinaryService;
 
-    public PostService(PostRepository postRepository){
+    public PostService(PostRepository postRepository, CloudinaryService cloudinaryService){
         this.postRepository = postRepository;
+        this.cloudinaryService = cloudinaryService;
     }
 
-    public Post createPost(CreatePostDTO postDTO,long userId){
+    public Post createPost(CreatePostDTO postDTO,long userId, List<MultipartFile> mediaFiles) {
         Post post = new Post();
 
         post.setDescription(postDTO.getDescription());
         post.setCategory(postDTO.getCategory());
         post.setLatitude(postDTO.getLatitude());
         post.setLongitude(postDTO.getLongitude());
-
         post.setUserId(userId);
 
-        Post savedPost = postRepository.save(post);
-        return savedPost;
+        Set<String> uploadedPublicIds = new HashSet<>();
+        try {
+            for (MultipartFile file : mediaFiles) {
+
+                UploadResult uploadResult = cloudinaryService.uploadFile(file);
+
+                String mediaUrl = uploadResult.getUrl();
+                String publicId = uploadResult.getPublicId();
+                uploadedPublicIds.add(publicId);
+
+                PostMedia postMedia = new PostMedia();
+                postMedia.setMediaUrl(mediaUrl);
+                postMedia.setPost(post);
+
+                if (file.getContentType() != null && file.getContentType().startsWith("video")) {
+                    postMedia.setMediaType(MediaType.VIDEO);
+                } else {
+                    postMedia.setMediaType(MediaType.IMAGE);
+                }
+
+                post.getMedia().add(postMedia);
+            }
+            return postRepository.save(post);
+        }
+        catch (Exception e) {
+                for (String publicId : uploadedPublicIds) {
+                    try {
+                        cloudinaryService.deleteFile(publicId);
+                    } catch (IOException deleteException) {
+                        deleteException.printStackTrace();
+                    }
+                }
+                throw new RuntimeException("Failed to upload media", e);
+            }
     }
-
-
 }
