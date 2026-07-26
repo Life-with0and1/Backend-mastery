@@ -2,10 +2,16 @@ package com.example.post.service;
 
 
 import com.example.post.dto.CreatePostDTO;
+import com.example.post.dto.PostMediaResponseDTO;
+import com.example.post.dto.PostResponseDTO;
+import com.example.post.exception.BadRequestException;
 import com.example.post.model.MediaType;
 import com.example.post.model.Post;
 import com.example.post.model.PostMedia;
 import com.example.post.repository.PostRepository;
+import org.apache.kafka.common.errors.ResourceNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,13 +25,16 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final CloudinaryService cloudinaryService;
+    private final MediaValidationService mediaValidationService;
 
-    public PostService(PostRepository postRepository, CloudinaryService cloudinaryService){
+    public PostService(PostRepository postRepository, CloudinaryService cloudinaryService, MediaValidationService mediaValidationService){
         this.postRepository = postRepository;
         this.cloudinaryService = cloudinaryService;
+        this.mediaValidationService = mediaValidationService;
     }
 
     public Post createPost(CreatePostDTO postDTO,long userId, List<MultipartFile> mediaFiles) {
+        mediaValidationService.validate(mediaFiles);
         Post post = new Post();
 
         post.setDescription(postDTO.getDescription());
@@ -68,5 +77,40 @@ public class PostService {
                 }
                 throw new RuntimeException("Failed to upload media", e);
             }
+    }
+
+
+    public Page<PostResponseDTO> fetchNearbyPosts(double latitude, double longitude, double radius, Pageable pageable) {
+        if (radius <= 0 || radius > 20) {
+            throw new BadRequestException("Radius must be under 5 kilometers");
+        }
+        return postRepository.findNearbyPosts(latitude, longitude, radius, pageable).map(this::toResponseDTO);
+    }
+
+    private PostResponseDTO toResponseDTO(Post post) {
+
+        List<PostMediaResponseDTO> media = post.getMedia()
+                .stream()
+                .map(postMedia -> new PostMediaResponseDTO(
+                        postMedia.getMediaUrl(),
+                        postMedia.getMediaType()
+                ))
+                .toList();
+
+        return new PostResponseDTO(
+                post.getId(),
+                post.getUserId(),
+                post.getLatitude(),
+                post.getLongitude(),
+                post.getDescription(),
+                post.getCategory(),
+                post.getCreatedAt(),
+                media
+        );
+    }
+
+    public PostResponseDTO fetchPostById(long postId) {
+        Post post = postRepository.findById(postId).orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+        return toResponseDTO(post);
     }
 }
